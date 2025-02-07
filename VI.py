@@ -21,7 +21,7 @@ OptState = Any
 def log_target(x):   
     mean_1 = jnp.array([0.25,0.25])
     cov_1 = jnp.array([[0.01,0],[0,0.01]])
-    mean_2 = jnp.array([0.75,0.75])
+    mean_2 = jnp.array([0.75,0.25])
     cov_2 =jnp.array([[0.01,0],[0,0.01]])
     return jnp.log(jax.scipy.stats.multivariate_normal.pdf(x, mean_1, cov_1)+ jax.scipy.stats.multivariate_normal.pdf(x, mean_2, cov_2))
 
@@ -93,17 +93,17 @@ if __name__ == '__main__':
 
     #flow parameters
     n_params = 2       #dimensionality of the domain
-    flow_num_layers = 4   
+    flow_num_layers = 3   
     hidden_size = 128
     mlp_num_layers = 2
-    num_bins = 6
+    num_bins = 10*3
 
     #training parameters
-    epochs = 300
+    epochs = 30
     Nsamps = 1000
 
-    learning_rate = 0.0001
-    optimiser = optax.adam(learning_rate)             #single optimiser.. #single network..
+    learning_rate = 0.001
+    optimiser = optax.adam(learning_rate)   
 
 
     #initialise the flow
