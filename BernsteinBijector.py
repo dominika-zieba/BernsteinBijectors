@@ -44,30 +44,6 @@ def bernstein_transform_log_derivative(x: Array, alphas: Array) -> Array:
     logdet = jax.scipy.special.logsumexp(log_bernstein_basis_at_x, b=coeffs)
     return logdet
 
-def log_abs_bernstein_basis_polynomial_derivative(k, n):
-    #returns a function that computes the log_abs_derivative and sgn(derivative)
-    def log_abs_db_k_n_dx(x):
-        
-        if k != 0: ##this might be negative in the log.. -> problem.
-            #return jnp.log(n) + 
-            #    log_bernstein_basis_polynomial(k - 1, n - 1)(x)
-            #    + jnp.log1p(-jnp.exp(log_bernstein_basis_polynomial(k, n - 1)(x) - log_bernstein_basis_polynomial(k - 1, n - 1)(x))) 
-            log_abs_der = jnp.log(n) + jnp.log(jnp.abs(jnp.exp(log_bernstein_basis_polynomial(k - 1, n - 1)(x)) 
-                - jnp.exp(log_bernstein_basis_polynomial(k, n - 1)(x))))
-            sgn_der = jnp.sign((jnp.exp(log_bernstein_basis_polynomial(k - 1, n - 1)(x)) - jnp.exp(log_bernstein_basis_polynomial(k, n - 1)(x))))
-            
-            return log_abs_der, sgn_der
-        
-        else:
-            log_abs_der = jnp.log(n) + (n - 1) * jnp.log(1 - x)
-            sgn_der = jnp.full(x.shape, -1)
-            
-            return log_abs_der, sgn_der
-
-    return log_abs_db_k_n_dx
-
-
-
 def get_increasing_alphas_nd(unconstrained_params, range_min=0, range_max=1):
     # returns a strictly increasing sequence of alphas, alpha_0=range_min, alpha_n = range_max, n=len(unconstrained_params)
 
@@ -83,33 +59,6 @@ def get_increasing_alphas_nd(unconstrained_params, range_min=0, range_max=1):
 
     return alphas
 
-def bernstein_log_transform_fwd(x: Array, alphas: Array) -> Tuple[Array, Array]:
-    """Computes y = f(x) and log|d/dx(f(x))|"""
-    # takes in a scalar x
-
-    n = alphas.shape[-1] - 1  # degree of the bernstein polynomial
-    log_bernstein_basis = [log_bernstein_basis_polynomial(k, n) for k in range(n + 1)]
-
-    log_basis_at_x = jnp.array(
-        [log_basis_polynomial(x) for log_basis_polynomial in log_bernstein_basis]
-    )
-    
-    y = jnp.exp(jax.scipy.special.logsumexp(log_basis_at_x, b=alphas)) #exp (log sum (alphas * exp(log_basis)))
-
-    log_abs_bernstein_basis_derivatives = [
-        log_abs_bernstein_basis_polynomial_derivative(k, n) for k in range(n + 1)
-    ]
-    log_abs_basis_derivative_at_x = jnp.atleast_2d(
-        jnp.array(
-            [log_abs_basis_derivative(x) for log_abs_basis_derivative in log_abs_bernstein_basis_derivatives]
-        )
-    )  # (poly_degree,)
-
-    log_abs_derivative_in_basis =  jax.scipy.special.logsumexp(log_abs_basis_derivative_at_x[:,0], b=alphas*log_abs_basis_derivative_at_x[:,1])
-   
-
-    return y, log_abs_derivative_in_basis
-
 def bernstein_transform_fwd(x: Array, alphas: Array) -> Tuple[Array, Array]:
     """Computes y = f(x) and log|d/dx(f(x))|"""
     # takes in a scalar x
@@ -123,22 +72,11 @@ def bernstein_transform_fwd(x: Array, alphas: Array) -> Tuple[Array, Array]:
     
     y = jnp.exp(jax.scipy.special.logsumexp(log_basis_at_x, b=alphas)) #exp (log sum (alphas * exp(log_basis)))
 
-    #bernstein_basis_derivatives = [
-    #    bernstein_basis_polynomial_derivative(k, n) for k in range(n + 1)
-    #]
-    #basis_derivative_at_x = jnp.atleast_2d(
-    #    jnp.array(
-    #        [basis_derivative(x) for basis_derivative in bernstein_basis_derivatives]
-    #    )
-    #)  # (poly_degree,)
-
-    #derivative_in_basis =  jnp.sum(jnp.multiply(basis_derivative_at_x, alphas))
-    #logabsdet = jnp.log(jnp.abs(derivative_in_basis))
     logabsdet = bernstein_transform_log_derivative(x, alphas)
 
     return y, logabsdet
 
-def bernstein_log_fwd(x: Array, alphas: Array) -> Array:
+def bernstein_fwd(x: Array, alphas: Array) -> Array:
     """Computes y = f(x)."""
     # asssumes x is a scalar
 
@@ -153,69 +91,13 @@ def bernstein_log_fwd(x: Array, alphas: Array) -> Array:
 
     return y
 
-def bernstein_log_log_det(x: Array, alphas: Array) -> Array:
-
-    n = alphas.shape[-1] - 1  # degree of the bernstein polynomial
-
-    log_abs_bernstein_basis_derivatives = [
-        log_abs_bernstein_basis_polynomial_derivative(k, n) for k in range(n + 1)
-    ]
-
-    #derivatives and signs..
-    log_abs_basis_derivative_at_x = jnp.atleast_2d(
-        jnp.array(
-            [log_abs_basis_derivative(x) for log_abs_basis_derivative in log_abs_bernstein_basis_derivatives]
-        )
-    )  # (poly_degree,)
-
-    log_abs_derivative_in_basis =  jax.scipy.special.logsumexp(log_abs_basis_derivative_at_x[:,0], b=alphas*log_abs_basis_derivative_at_x[:,1])
-
-    return log_abs_derivative_in_basis
-
-def bernstein_log_det(x: Array, alphas: Array) -> Array:
-
-    n = alphas.shape[-1] - 1  # degree of the bernstein polynomial
-
-    bernstein_basis_derivatives = [
-        bernstein_basis_polynomial_derivative(k, n) for k in range(n + 1)
-    ]
-    basis_derivative_at_x = jnp.atleast_2d(
-        jnp.array(
-            [basis_derivative(x) for basis_derivative in bernstein_basis_derivatives]
-        )
-    ) 
-    derivative_in_basis =  jnp.sum(jnp.multiply(basis_derivative_at_x, alphas))
-    logabsdet = jnp.log(jnp.abs(derivative_in_basis))
-
-    return logabsdet
-
-def bernstein_log_transform_inv(y: Array, alphas: Array) -> Tuple[Array, Array]:
-    """Computes x = f^{-1}(y) and  log|d/dy(f^-1(y))|."""
-    n_points = 200
-    clip = 1e-7
-
-    x_fit = jnp.linspace(clip, 1 - clip, n_points)
-    y_fit = jax.vmap(bernstein_log_fwd, in_axes=(0, None))(
-        x_fit, alphas
-    )  # this is the y=f(x) values for the linear xs
-
-    # interpolation function
-    def inp(y, y_fit, x_fit):
-        return jnp.interp(y, y_fit, x_fit)
-
-    x = inp(y, y_fit, x_fit)
-
-    logdet = -bernstein_log_log_det(x, alphas)
-
-    return x, logdet
-
 def bernstein_transform_inv(y: Array, alphas: Array) -> Tuple[Array, Array]:
     """Computes x = f^{-1}(y) and  log|d/dy(f^-1(y))|."""
     n_points = 200
     clip = 1e-7
 
     x_fit = jnp.linspace(clip, 1 - clip, n_points)
-    y_fit = jax.vmap(bernstein_log_fwd, in_axes=(0, None))(
+    y_fit = jax.vmap(bernstein_fwd, in_axes=(0, None))(
         x_fit, alphas
     )  # this is the y=f(x) values for the linear xs
 
@@ -225,7 +107,7 @@ def bernstein_transform_inv(y: Array, alphas: Array) -> Tuple[Array, Array]:
 
     x = inp(y, y_fit, x_fit)
 
-    logdet = -bernstein_log_det(x, alphas)
+    logdet = -bernstein_transform_log_derivative(x, alphas)
 
     return x, logdet
 
