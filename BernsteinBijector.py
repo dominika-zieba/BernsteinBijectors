@@ -6,7 +6,7 @@ from typing import Tuple
 
 from distrax._src.bijectors import bijector as base
 
-clip = 1e-6
+clip = 0.
 
 Array = base.Array
 
@@ -17,6 +17,21 @@ def log_bernstein_basis_polynomial(k, n):
     
     def log_basis_polynomial(x):
         return log_binomial_coeff + k * jnp.log1p(x-1) + (n - k) * jnp.log1p(-x) #log1p(x) = log(1+x), but more accurate for x close to 0.
+
+
+    def log_basis_polynomial(x):
+        if k == 0:
+            return jnp.where(
+                x == 0, 0.,
+                log_binomial_coeff + k * jnp.log1p(x-1) + (n - k) * jnp.log1p(-x),
+            )
+        if k == n:
+            return jnp.where(
+                x == 1, 0.,
+                log_binomial_coeff + k * jnp.log1p(x-1) + (n - k) * jnp.log1p(-x),
+            )
+        else:
+            return log_binomial_coeff + k * jnp.log1p(x-1) + (n - k) * jnp.log1p(-x)
 
     return log_basis_polynomial
 
@@ -39,10 +54,49 @@ def bernstein_transform_log_derivative(x: Array, alphas: Array) -> Array:
     #alphas[:-1] # alpha_0, alpha_1, ..., alpha_n-1
 
     log_bernstein_basis_at_x = jnp.stack([log_bernstein_basis_polynomial(k, n-1)(x) for k in range(n)])
-    coeffs = n*(alphas[1:] - alphas[:-1])      #(alpha_k - alpha_k-1) for k between 0 and n
+    coeffs = jnp.abs(n*(alphas[1:] - alphas[:-1]))      #(alpha_k - alpha_k-1) for k between 0 and n
 
     logdet = jax.scipy.special.logsumexp(log_bernstein_basis_at_x, b=coeffs)
+
+    #with jax.disable_jit():
+        #print(jnp.any((jnp.max(coeffs) - jnp.exp(logdet)) < 0))
+        #  print(jnp.any((jnp.min(coeffs) - jnp.exp(logdet)) > 0))
+        #print(jnp.any(jnp.min(coeffs) - jnp.exp(logdet)) < 0)
+    
+    #        print('logdet exceeds upper bound')
+
+        #print(logdet.val)
+        #print(jnp.max(coeffs).val)
+        #print((alphas[1:] - alphas[:-1]).val)
+        #print(jnp.max(coeffs) - jnp.exp(logdet))
+        #print(coeffs.val)
+    #jax.lax.cond(jnp.exp(logdet) > jnp.max(coeffs), print_error, print_non_error, (logdet, coeffs))
+    #if jnp.exp(logdet) > jnp.max(coeffs):
+    #    jax.debug.print('det exceeds upper bound')
+    #    jax.debug.print(jnp.exp(logdet), jnp.max(coeffs))
+    #if jnp.exp(logdet) < jnp.min(coeffs):
+    #    jax.debug.print('det exceeds lower bound')
+    #    jax.debug.print(jnp.exp(logdet), jnp.min(coeffs))
+
     return logdet
+
+def print_error(arg):
+    logdet, coeffs = arg
+    jax.debug.print('det exceeds upper bound')
+    #jax.debug.print(logdet)
+    with jax.disable_jit():
+        print(logdet)
+        print(jnp.max(coeffs))
+    #jax.debug.print(coeffs)
+    
+
+def print_non_error(arg):
+    logdet, coeffs = arg
+    jax.debug.print('det below upper bound')
+    with jax.disable_jit():
+        print(logdet)
+        print(jnp.max(coeffs))
+
 
 def get_increasing_alphas_nd(unconstrained_params, range_min=0, range_max=1):
     # returns a strictly increasing sequence of alphas, alpha_0=range_min, alpha_n = range_max, n=len(unconstrained_params)
@@ -64,12 +118,8 @@ def bernstein_transform_fwd(x: Array, alphas: Array) -> Tuple[Array, Array]:
     # takes in a scalar x
 
     n = alphas.shape[-1] - 1  # degree of the bernstein polynomial
-    log_bernstein_basis = [log_bernstein_basis_polynomial(k, n) for k in range(n + 1)]
+    log_basis_at_x = jnp.stack([log_bernstein_basis_polynomial(k, n)(x) for k in range(n + 1)])
 
-    log_basis_at_x = jnp.array(
-        [log_basis_polynomial(x) for log_basis_polynomial in log_bernstein_basis]
-    )
-    
     y = jnp.exp(jax.scipy.special.logsumexp(log_basis_at_x, b=alphas)) #exp (log sum (alphas * exp(log_basis)))
 
     logabsdet = bernstein_transform_log_derivative(x, alphas)
@@ -81,11 +131,7 @@ def bernstein_fwd(x: Array, alphas: Array) -> Array:
     # asssumes x is a scalar
 
     n = alphas.shape[-1] - 1  # degree of the bernstein polynomial
-    log_bernstein_basis = [log_bernstein_basis_polynomial(k, n) for k in range(n + 1)]
-
-    log_basis_at_x = jnp.array(
-        [log_basis_polynomial(x) for log_basis_polynomial in log_bernstein_basis]
-    )
+    log_basis_at_x = jnp.stack([log_bernstein_basis_polynomial(k, n)(x) for k in range(n + 1)])
     
     y = jnp.exp(jax.scipy.special.logsumexp(log_basis_at_x, b=alphas)) #exp (log sum (alphas * exp(log_basis)))
 

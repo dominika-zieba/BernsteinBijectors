@@ -5,10 +5,12 @@ import jax.numpy as jnp
 def bernstein_basis_polynomial(k, n):
     # returns a berstein basis polynomial b_{k,n}(x) = nCk x^k (1-x)^(n-k), nCk = n!/(k!(n-k)!), as a function
     # gamma(n) = (n-1)!
-    binomial_coeff = jax.scipy.special.gamma(n+1) / ((jax.scipy.special.gamma(n-k+1))*jax.scipy.special.gamma(k+1))
+    #binomial_coeff = jax.scipy.special.gamma(n+1) / ((jax.scipy.special.gamma(n-k+1))*jax.scipy.special.gamma(k+1))
+    jnp.exp(jax.scipy.special.gammaln(n+1) - (jax.scipy.special.gammaln(n-k+1)+jax.scipy.special.gammaln(k+1)))
 
     def basis_polynomial(x):
-        return binomial_coeff * x**k * (1-x)**(n-k)
+        #return binomial_coeff * x**k * (1-x)**(n-k)
+        return  binomial_coeff * jnp.exp(k*jnp.log(x) + (n-k)*jnp.log(1-x))
         
     return basis_polynomial
 
