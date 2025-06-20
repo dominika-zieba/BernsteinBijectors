@@ -15,8 +15,8 @@ def log_bernstein_basis_polynomial(k, n):
     # gamma(n) = (n-1)!
     log_binomial_coeff = jax.scipy.special.gammaln(n + 1) - (jax.scipy.special.gammaln(n - k + 1) + jax.scipy.special.gammaln(k + 1))
     
-    def log_basis_polynomial(x):
-        return log_binomial_coeff + k * jnp.log1p(x-1) + (n - k) * jnp.log1p(-x) #log1p(x) = log(1+x), but more accurate for x close to 0.
+    #def log_basis_polynomial(x):
+    #    return log_binomial_coeff + k * jnp.log1p(x-1) + (n - k) * jnp.log1p(-x) #log1p(x) = log(1+x), but more accurate for x close to 0.
 
 
     def log_basis_polynomial(x):
