@@ -16,8 +16,8 @@ def log_bernstein_basis_polynomial(k, n):
     log_binomial_coeff = jax.scipy.special.gammaln(n + 1) - (jax.scipy.special.gammaln(n - k + 1) + jax.scipy.special.gammaln(k + 1))
     
     #def log_basis_polynomial(x):
-    #    return log_binomial_coeff + k * jnp.log1p(x-1) + (n - k) * jnp.log1p(-x) #log1p(x) = log(1+x), but more accurate for x close to 0.
-
+    #    return log_binomial_coeff + k * jnp.log1p(x-1) + (n - k) * jnp.log1p(-x) 
+    #log1p(x) = log(1+x), but more accurate for x close to 0.
 
     def log_basis_polynomial(x):
         if k == 0:
@@ -58,51 +58,13 @@ def bernstein_transform_log_derivative(x: Array, alphas: Array) -> Array:
 
     logdet = jax.scipy.special.logsumexp(log_bernstein_basis_at_x, b=coeffs)
 
-    #with jax.disable_jit():
-        #print(jnp.any((jnp.max(coeffs) - jnp.exp(logdet)) < 0))
-        #  print(jnp.any((jnp.min(coeffs) - jnp.exp(logdet)) > 0))
-        #print(jnp.any(jnp.min(coeffs) - jnp.exp(logdet)) < 0)
-    
-    #        print('logdet exceeds upper bound')
-
-        #print(logdet.val)
-        #print(jnp.max(coeffs).val)
-        #print((alphas[1:] - alphas[:-1]).val)
-        #print(jnp.max(coeffs) - jnp.exp(logdet))
-        #print(coeffs.val)
-    #jax.lax.cond(jnp.exp(logdet) > jnp.max(coeffs), print_error, print_non_error, (logdet, coeffs))
-    #if jnp.exp(logdet) > jnp.max(coeffs):
-    #    jax.debug.print('det exceeds upper bound')
-    #    jax.debug.print(jnp.exp(logdet), jnp.max(coeffs))
-    #if jnp.exp(logdet) < jnp.min(coeffs):
-    #    jax.debug.print('det exceeds lower bound')
-    #    jax.debug.print(jnp.exp(logdet), jnp.min(coeffs))
-
     return logdet
-
-def print_error(arg):
-    logdet, coeffs = arg
-    jax.debug.print('det exceeds upper bound')
-    #jax.debug.print(logdet)
-    with jax.disable_jit():
-        print(logdet)
-        print(jnp.max(coeffs))
-    #jax.debug.print(coeffs)
-    
-
-def print_non_error(arg):
-    logdet, coeffs = arg
-    jax.debug.print('det below upper bound')
-    with jax.disable_jit():
-        print(logdet)
-        print(jnp.max(coeffs))
-
 
 def get_increasing_alphas_nd(unconstrained_params, range_min=0, range_max=1):
     # returns a strictly increasing sequence of alphas, alpha_0=range_min, alpha_n = range_max, n=len(unconstrained_params)
 
     unconstrained_params = jnp.atleast_2d(unconstrained_params)
-    cumsum = jnp.cumsum(jnp.abs(unconstrained_params) + 1e-5, axis=-1)
+    cumsum = jnp.cumsum(jnp.abs(unconstrained_params) + 1e-11, axis=-1)
     scaled_params = range_min + cumsum / jnp.atleast_2d(cumsum[:, -1]).T * (
         range_max - range_min
     )
@@ -140,7 +102,7 @@ def bernstein_fwd(x: Array, alphas: Array) -> Array:
 def bernstein_transform_inv(y: Array, alphas: Array) -> Tuple[Array, Array]:
     """Computes x = f^{-1}(y) and  log|d/dy(f^-1(y))|."""
     n_points = 200
-    clip = 1e-7
+    clip = 1e-7 ##TODO: get rid of this (currently runs into numerical issues if not clipped)
 
     x_fit = jnp.linspace(clip, 1 - clip, n_points)
     y_fit = jax.vmap(bernstein_fwd, in_axes=(0, None))(
@@ -173,7 +135,6 @@ class BernsteinBijector(distrax.Bijector):
 
     def forward_and_log_det(self, x: Array) -> Tuple[Array, Array]:
         """Computes y = f(x) and log|det J(f)(x)|."""
-        #x = jnp.clip(x, clip, 1.0 - clip)
         fn = jnp.vectorize(
             bernstein_transform_fwd, excluded=frozenset(), signature="(),(n)->(),()"
         )
@@ -183,7 +144,6 @@ class BernsteinBijector(distrax.Bijector):
 
     def inverse_and_log_det(self, y: Array) -> Tuple[Array, Array]:
         """Computes x = f^{-1}(y) and log|det J(f^{-1})(y)|."""
-        #y = jnp.clip(y, clip, 1.0 - clip)
         fn = jnp.vectorize(bernstein_transform_inv, signature="(),(n)->(),()")
         x, logdet = fn(y, self.alphas)
         return x, logdet
