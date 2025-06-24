@@ -1,4 +1,4 @@
-import wandb
+#import wandb
 import numpy as np
 import jax
 import jax.numpy as jnp
@@ -23,7 +23,7 @@ def log_target(x):
     cov_1 = jnp.array([[0.01,0],[0,0.01]])
     mean_2 = jnp.array([0.75,0.25])
     cov_2 =jnp.array([[0.01,0],[0,0.01]])
-    return jnp.log(jax.scipy.stats.multivariate_normal.pdf(x, mean_1, cov_1)+ jax.scipy.stats.multivariate_normal.pdf(x, mean_2, cov_2))
+    return jnp.logaddexp(jax.scipy.stats.multivariate_normal.logpdf(x, mean_1, cov_1), jax.scipy.stats.multivariate_normal.logpdf(x, mean_2, cov_2))
 
 from vi_routines import make_flow_model
 
@@ -88,8 +88,11 @@ def init_logging(filename):
 #Training Loop
 
 if __name__ == '__main__':
-
-    run_name = sys.argv[1] #name of the run
+    import argparse
+    parser = argparse.ArgumentParser(description='Run Variational Inference with a flow model.')
+    parser.add_argument('run_name', type=str, help='Name of the run for logging.')
+    args = parser.parse_args()
+    run_name = args.run_name
 
     os.makedirs(f'results/{run_name}', exist_ok=True)
 

@@ -16,3 +16,9 @@ pip install git+https://github.com/dominika-zieba/BernsteinBijectors.git
 ```
 
 If you want to edit, then clone the repository and `pip install .` from the top level directory.
+
+## Dependencies
+
+The JAX ecosystem is frequently changing and has been known break upon upgrades. Sometimes incompatibilities can arise between GPU and CPU versions.
+This package has been tested on a fresh environment with `pip install jax[cuda12]`, pulling jax 0.6.2. There are known issues with v0.6.1 and v0.6.0.
+
