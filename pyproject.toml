@@ -12,7 +12,7 @@ description = "Bernstein bijectors for normalising flows in JAX"
 readme = "README.md"
 
 dependencies = [
-    "jax  (>=0.5.3,<0.6.2)",
+    "jax  (>=0.5.3, !=0.6.0, !=0.6.1)",
     "optimistix",
     "distrax",
 ]

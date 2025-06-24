@@ -1,13 +1,13 @@
-#Coupling Normalising flow with Bernstein Bijectors, based on distrax example. 
+#Coupling Normalising flow with Bernstein Bijectors, based on distrax example.
 
 import numpy as np
 import jax
 import jax.numpy as jnp
 
 from typing import Any, Iterator, Mapping, Optional, Sequence, Tuple
-import haiku as hk  
+import haiku as hk
 import distrax
-from bernsteinbijectors.BernsteinBijector import BernsteinBijector
+from bernsteinbijectors import BernsteinBijector
 
 Array = jnp.ndarray
 PRNGKey = Array
@@ -64,7 +64,7 @@ def make_flow_model(
         mask = jnp.logical_not(mask)
 
     # We invert the flow so that the `forward` method is called with `log_prob`.
-    flow = distrax.Inverse(distrax.Chain(layers))   #bijective transformation from latent space (uniform dist) to data space (target distribution) 
+    flow = distrax.Inverse(distrax.Chain(layers))   #bijective transformation from latent space (uniform dist) to data space (target distribution)
 
     base_distribution = distrax.Independent(
         distrax.Uniform(low=jnp.zeros(event_shape), high=jnp.ones(event_shape)*1),
