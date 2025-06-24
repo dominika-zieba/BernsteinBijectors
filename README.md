@@ -7,3 +7,12 @@ Contents of the repository:
 - BernsteinBijector.py contains the implementation of the Bernstein Bijectors as a distrax class.
 - vi_routines.py contains a JAX implementation of a coupling normalising flow with Bernstein Bijectors.
 - VI_BP.ipynb provides an example of training the Bernstein polynomial flow to approximate a Gaussian mixture target using variational inference (reverse KL optimisation).
+
+## Installation
+
+The package is not in PyPI yet, but to install directly from github, run
+```
+pip install git+https://github.com/dominika-zieba/BernsteinBijectors.git
+```
+
+If you want to edit, then clone the repository and `pip install .` from the top level directory.
