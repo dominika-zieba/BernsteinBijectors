@@ -130,7 +130,7 @@ def bernstein_optim_inv(y: Array, alphas: Array) -> Array:
     #solver = optx.Newton(rtol=1e-7, atol=1e-6)
     #sol = optx.root_find(inverse_cost, solver, y0 = y, args=(y, alphas))
     solver = optx.Bisection(rtol=1e-6, atol=1e-6)
-    sol = optx.root_find(inverse_cost, solver, y0 = y, args=(y, alphas), options = dict(lower=0, upper=1))
+    sol = optx.root_find(inverse_cost, solver, y0 = y, args=(y, alphas), options = dict(lower=0, upper=1),  max_steps = 256*2, throw=False)
     return sol.value
 
 def bernstein_optim_transform_inv(y: Array, alphas: Array) -> Tuple[Array, Array]:
