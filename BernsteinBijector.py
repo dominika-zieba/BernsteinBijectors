@@ -11,14 +11,11 @@ clip = 0.
 Array = base.Array
 
 def log_bernstein_basis_polynomial(k, n):
-    # returns a berstein basis polynomial b_{k,n}(x) = nCk x^k (1-x)^(n-k), nCk = n!/(k!(n-k)!), as a function
+    """Returns a berstein basis polynomial b_{k,n}(x) = nCk x^k (1-x)^(n-k), nCk = n!/(k!(n-k)!), as a function of x"""
     # gamma(n) = (n-1)!
     log_binomial_coeff = jax.scipy.special.gammaln(n + 1) - (jax.scipy.special.gammaln(n - k + 1) + jax.scipy.special.gammaln(k + 1))
     
-    #def log_basis_polynomial(x):
-    #    return log_binomial_coeff + k * jnp.log1p(x-1) + (n - k) * jnp.log1p(-x) 
     #log1p(x) = log(1+x), but more accurate for x close to 0.
-
     def log_basis_polynomial(x):
         if k == 0:
             return jnp.where(
@@ -36,6 +33,7 @@ def log_bernstein_basis_polynomial(k, n):
     return log_basis_polynomial
 
 def bernstein_basis_polynomial_derivative(k, n):
+    """Returns a berstein basis polynomial derivative b'_{k,n}(x), as a function of x"""
     def db_k_n_dx(x):
         if k != 0:
             return n * (
@@ -48,6 +46,9 @@ def bernstein_basis_polynomial_derivative(k, n):
     return db_k_n_dx
 
 def bernstein_transform_log_derivative(x: Array, alphas: Array) -> Array:
+    """Returns a logaritm of the basis polynomial derivative, log(b'_{k,n})(x) at x"""
+    # expects x to be a scalar
+
     n = alphas.shape[-1] - 1  # degree of the bernstein polynomial
 
     #alphas[1:]  # alpha_1, alpha_2, ..., alpha_n
@@ -61,7 +62,7 @@ def bernstein_transform_log_derivative(x: Array, alphas: Array) -> Array:
     return logdet
 
 def get_increasing_alphas_nd(unconstrained_params, range_min=0, range_max=1):
-    # returns a strictly increasing sequence of alphas, alpha_0=range_min, alpha_n = range_max, n=len(unconstrained_params)
+    """Returns a strictly increasing sequence of alphas, alpha_0=range_min, alpha_n = range_max, n=len(unconstrained_params)"""
 
     unconstrained_params = jnp.atleast_2d(unconstrained_params)
     cumsum = jnp.cumsum(jnp.abs(unconstrained_params) + 1e-11, axis=-1)
@@ -77,7 +78,7 @@ def get_increasing_alphas_nd(unconstrained_params, range_min=0, range_max=1):
 
 def bernstein_transform_fwd(x: Array, alphas: Array) -> Tuple[Array, Array]:
     """Computes y = f(x) and log|d/dx(f(x))|"""
-    # takes in a scalar x
+    # expects x to be a scalar
 
     n = alphas.shape[-1] - 1  # degree of the bernstein polynomial
     log_basis_at_x = jnp.stack([log_bernstein_basis_polynomial(k, n)(x) for k in range(n + 1)])
@@ -123,17 +124,20 @@ def bernstein_transform_inv(y: Array, alphas: Array) -> Tuple[Array, Array]:
 import optimistix as optx
 
 def inverse_cost(x: Array, args: Tuple[Array, Array]) -> Array:
+    """Computes cost = y - f(x)"""
     y, alphas = args
     return y - bernstein_fwd(x,alphas)
 
 def bernstein_optim_inv(y: Array, alphas: Array) -> Array:
+    """Computes x = f^{-1}(y)"""
     #solver = optx.Newton(rtol=1e-7, atol=1e-6)
     #sol = optx.root_find(inverse_cost, solver, y0 = y, args=(y, alphas))
     solver = optx.Bisection(rtol=1e-6, atol=1e-6)
-    sol = optx.root_find(inverse_cost, solver, y0 = y, args=(y, alphas), options = dict(lower=0, upper=1),  max_steps = 256*2, throw=False)
+    sol = optx.root_find(inverse_cost, solver, y0 = y, args=(y, alphas), options = dict(lower=0, upper=1),  max_steps = 256, throw=False)
     return sol.value
 
 def bernstein_optim_transform_inv(y: Array, alphas: Array) -> Tuple[Array, Array]:
+    """Computes x = f^{-1}(y) and  log|d/dy(f^-1(y))|."""
     x = bernstein_optim_inv(y, alphas)
     logabsdet = - bernstein_transform_log_derivative(x, alphas) 
     return x, logabsdet
