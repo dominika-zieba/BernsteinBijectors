@@ -124,17 +124,20 @@ def bernstein_transform_inv(y: Array, alphas: Array) -> Tuple[Array, Array]:
 import optimistix as optx
 
 def inverse_cost(x: Array, args: Tuple[Array, Array]) -> Array:
+    """Computes cost = y - f(x)"""
     y, alphas = args
     return y - bernstein_fwd(x,alphas)
 
 def bernstein_optim_inv(y: Array, alphas: Array) -> Array:
+    """Computes x = f^{-1}(y)"""
     #solver = optx.Newton(rtol=1e-7, atol=1e-6)
     #sol = optx.root_find(inverse_cost, solver, y0 = y, args=(y, alphas))
     solver = optx.Bisection(rtol=1e-6, atol=1e-6)
-    sol = optx.root_find(inverse_cost, solver, y0 = y, args=(y, alphas), options = dict(lower=0, upper=1),  max_steps = 256*2, throw=False)
+    sol = optx.root_find(inverse_cost, solver, y0 = y, args=(y, alphas), options = dict(lower=0, upper=1),  max_steps = 256, throw=False)
     return sol.value
 
 def bernstein_optim_transform_inv(y: Array, alphas: Array) -> Tuple[Array, Array]:
+    """Computes x = f^{-1}(y) and  log|d/dy(f^-1(y))|."""
     x = bernstein_optim_inv(y, alphas)
     logabsdet = - bernstein_transform_log_derivative(x, alphas) 
     return x, logabsdet
