@@ -1,4 +1,4 @@
-#Normalising flow        (NO CHANGES)
+#Coupling Normalising flow with Bernstein Bijectors, based on distrax example. 
 
 import numpy as np
 import jax
@@ -39,7 +39,7 @@ def make_flow_model(
     event_shape: Sequence[int],
     num_layers: int = 4,
     hidden_sizes: Sequence[int] = [250, 250],
-    num_bins: int = 4,
+    bernstein_degree: int = 20,
 ) -> distrax.Transformed:
     """Creates the flow model."""
     # Alternating binary mask.
@@ -50,13 +50,7 @@ def make_flow_model(
     def bijector_fn(params: Array):
         return BernsteinBijector(params)
 
-    # Number of parameters for the rational-quadratic spline:
-    # - `num_bins` bin widths
-    # - `num_bins` bin heights
-    # - `num_bins + 1` knot slopes
-    # for a total of `3 * num_bins + 1` parameters.
-    #num_bijector_params = 3 * num_bins + 1
-    num_bijector_params = num_bins
+    num_bijector_params = bernstein_degree
 
     layers = []
     for _ in range(num_layers):
@@ -70,13 +64,10 @@ def make_flow_model(
         mask = jnp.logical_not(mask)
 
     # We invert the flow so that the `forward` method is called with `log_prob`.
-    flow = distrax.Inverse(distrax.Chain(layers))                                   #bijective transformation from base (normal) to parameter space 
-    #flow = distrax.Chain(layers)
+    flow = distrax.Inverse(distrax.Chain(layers))   #bijective transformation from latent space (uniform dist) to data space (target distribution) 
 
     base_distribution = distrax.Independent(
-        #distrax.Uniform(low=jnp.ones(event_shape)*-1, high=jnp.ones(event_shape)*1),
         distrax.Uniform(low=jnp.zeros(event_shape), high=jnp.ones(event_shape)*1),
-        #distrax.Normal(loc=jnp.zeros(event_shape), scale=jnp.ones(event_shape)),
         reinterpreted_batch_ndims=len(event_shape)
     )
 
