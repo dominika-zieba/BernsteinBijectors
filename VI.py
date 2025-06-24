@@ -25,7 +25,7 @@ def log_target(x):
     cov_2 =jnp.array([[0.01,0],[0,0.01]])
     return jnp.log(jax.scipy.stats.multivariate_normal.pdf(x, mean_1, cov_1)+ jax.scipy.stats.multivariate_normal.pdf(x, mean_2, cov_2))
 
-from vi_routines_BP import make_flow_model
+from vi_routines import make_flow_model
 
 # Training routines:
 
@@ -38,7 +38,7 @@ def sample_and_log_prob(prng_key: PRNGKey, n: int) -> Tuple[Any, Array]:      # 
         event_shape=(n_params,),
         num_layers=flow_num_layers,
         hidden_sizes=[hidden_size] * mlp_num_layers,
-        num_bins=num_bins
+        bernstein_degree=bernstein_degree
     )
 
     return model.sample_and_log_prob(seed=prng_key, sample_shape=(n,))
@@ -91,12 +91,14 @@ if __name__ == '__main__':
 
     run_name = sys.argv[1] #name of the run
 
+    os.makedirs(f'results/{run_name}', exist_ok=True)
+
     #flow parameters
     n_params = 2       #dimensionality of the domain
     flow_num_layers = 3   
     hidden_size = 128
     mlp_num_layers = 2
-    num_bins = 10*3
+    bernstein_degree = 30
 
     #training parameters
     epochs = 30
