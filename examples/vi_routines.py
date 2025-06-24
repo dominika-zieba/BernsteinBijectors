@@ -7,7 +7,7 @@ import jax.numpy as jnp
 from typing import Any, Iterator, Mapping, Optional, Sequence, Tuple
 import haiku as hk  
 import distrax
-from BernsteinBijector import BernsteinBijector
+from bernsteinbijectors.BernsteinBijector import BernsteinBijector
 
 Array = jnp.ndarray
 PRNGKey = Array
