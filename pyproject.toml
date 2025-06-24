@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bernsteinbijectors"
+version = "0.0.1"
+authors = [
+  { name="Dominika Zieba", email="dominika.zieba@glasgow.ac.uk" },
+]
+description = "Bernstein bijectors for normalising flows in JAX"
+readme = "README.md"
+
+dependencies = [
+    "jax  (>=0.5.3,<0.6.2)",
+    "optimistix",
+    "distrax",
+]
+
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+
+[project.urls]
+Homepage = "https://github.com/dominika-zieba/BernsteinBijectors"
+Issues = "https://github.com/dominika-zieba/BernsteinBijectors/issues"
