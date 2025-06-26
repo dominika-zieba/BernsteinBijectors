@@ -11,6 +11,7 @@ os.environ['XLA_PYTHON_CLIENT_PREALLOCATE']='false'
 import haiku as hk
 import optax
 from typing import Any, Iterator, Mapping, Optional, Sequence, Tuple
+
 Array = jnp.ndarray
 PRNGKey = Array
 OptState = Any
@@ -104,7 +105,7 @@ if __name__ == '__main__':
     bernstein_degree = 30
 
     #training parameters
-    epochs = 30
+    epochs = 100
     Nsamps = 1000
 
     learning_rate = 0.001

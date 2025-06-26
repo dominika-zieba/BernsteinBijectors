@@ -147,7 +147,7 @@ def bernstein_optim_transform_inv(y: Array, alphas: Array) -> Tuple[Array, Array
 class BernsteinBijector(distrax.Bijector):
     """Initializes a Bernstein bijector."""
 
-    def __init__(self, nn_params_out, range_min=0, range_max=1, event_ndims_in=0):
+    def __init__(self, nn_params_out, range_min=0, range_max=1, inverse_solver = None, event_ndims_in=0):
         super().__init__(event_ndims_in=event_ndims_in)
 
         if len(nn_params_out.shape) == 2:
@@ -157,6 +157,7 @@ class BernsteinBijector(distrax.Bijector):
             self.alphas = jax.vmap(get_increasing_alphas_nd, in_axes=(0, None, None))(
                 nn_params_out, range_min, range_max
             )
+        self.inverse_solver = inverse_solver
 
     def forward_and_log_det(self, x: Array) -> Tuple[Array, Array]:
         """Computes y = f(x) and log|det J(f)(x)|."""
@@ -169,6 +170,9 @@ class BernsteinBijector(distrax.Bijector):
     
     def inverse_and_log_det(self, y: Array) -> Tuple[Array, Array]:
         """Computes x = f^{-1}(y) and log|det J(f^{-1})(y)|."""
-        fn = jnp.vectorize(bernstein_optim_transform_inv, signature="(),(n)->(),()")
+        if self.inverse_solver == 'bisection': ##uses a bisection solver to compute the inverse
+            fn = jnp.vectorize(bernstein_optim_transform_inv, signature="(),(n)->(),()")
+        else: ## else uses a linear interpolation to compute the inverse
+            fn = jnp.vectorize(bernstein_transform_inv, signature="(),(n)->(),()")
         x, logdet = fn(y, self.alphas)
         return x, logdet

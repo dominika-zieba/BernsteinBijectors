@@ -48,7 +48,7 @@ def make_flow_model(
     mask = mask.astype(bool)
 
     def bijector_fn(params: Array):
-        return BernsteinBijector(params)
+        return BernsteinBijector(params, inverse_solver = None)
 
     num_bijector_params = bernstein_degree
 
